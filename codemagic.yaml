@@ -59,12 +59,7 @@ workflows:
                 perl -0pi -e 's|dependencies\s*\{\s*|dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n|' android/app/build.gradle.kts
               fi
             else
-              cat >> android/app/build.gradle.kts <<'EOF'
-
-dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-}
-EOF
+              printf '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n' >> android/app/build.gradle.kts
             fi
           elif [ -f android/app/build.gradle ]; then
             if ! grep -q 'coreLibraryDesugaringEnabled true' android/app/build.gradle; then
@@ -75,12 +70,7 @@ EOF
                 perl -0pi -e "s|dependencies\\s*\\{\\s*|dependencies {\\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\\n|" android/app/build.gradle
               fi
             else
-              cat >> android/app/build.gradle <<'EOF'
-
-dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
-}
-EOF
+              printf "\ndependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\n}\n" >> android/app/build.gradle
             fi
           else
             echo "Android app Gradle subor sa nenasiel."
