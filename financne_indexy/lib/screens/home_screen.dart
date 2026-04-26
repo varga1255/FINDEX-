@@ -715,11 +715,6 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: _openSettings,
             tooltip: 'Výber indexov',
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _load,
-            tooltip: 'Načítať / obnoviť dáta',
-          ),
         ],
       ),
       body: _allDataFuture == null
