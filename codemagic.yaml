@@ -1,0 +1,62 @@
+workflows:
+  android-build:
+    name: Android APK Build
+    max_build_duration: 60
+    environment:
+      flutter: 3.41.5
+    scripts:
+      - name: Najdi Flutter projekt
+        script: |
+          if [ -f "financne_indexy/pubspec.yaml" ] && [ -f "financne_indexy/lib/main.dart" ]; then
+            PROJECT_DIR="financne_indexy"
+          elif [ -f "APK/financne_indexy/pubspec.yaml" ] && [ -f "APK/financne_indexy/lib/main.dart" ]; then
+            PROJECT_DIR="APK/financne_indexy"
+          else
+            echo "Flutter projekt sa nenasiel."
+            echo "Ocakavane umiestnenie:"
+            echo "  financne_indexy/pubspec.yaml"
+            echo "  financne_indexy/lib/main.dart"
+            echo "Aktualny obsah repozitara:"
+            pwd
+            find . -maxdepth 3 -type f | sort
+            exit 1
+          fi
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $CM_ENV
+
+      - name: Vygeneruj Android projekt
+        script: |
+          cd "$PROJECT_DIR"
+          mkdir -p /tmp/financne_indexy_backup
+          cp pubspec.yaml /tmp/financne_indexy_backup/pubspec.yaml
+          cp lib/main.dart /tmp/financne_indexy_backup/main.dart
+
+          rm -rf android ios linux macos web windows test .dart_tool
+
+          flutter create --platforms=android --project-name financne_indexy .
+
+          cp /tmp/financne_indexy_backup/pubspec.yaml pubspec.yaml
+          cp /tmp/financne_indexy_backup/main.dart lib/main.dart
+
+      - name: Pridaj Android permissions
+        script: |
+          cd "$PROJECT_DIR"
+          if ! grep -q 'android.permission.INTERNET' android/app/src/main/AndroidManifest.xml; then
+            perl -0pi -e 's|<manifest[^>]*>|$&\n    <uses-permission android:name="android.permission.INTERNET"/>|' android/app/src/main/AndroidManifest.xml
+          fi
+          if ! grep -q 'android.permission.POST_NOTIFICATIONS' android/app/src/main/AndroidManifest.xml; then
+            perl -0pi -e 's|<manifest[^>]*>|$&\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>|' android/app/src/main/AndroidManifest.xml
+          fi
+
+      - name: Stiahni zavislosti
+        script: |
+          cd "$PROJECT_DIR"
+          flutter pub get
+
+      - name: Zostav release APK
+        script: |
+          cd "$PROJECT_DIR"
+          flutter build apk --release
+
+    artifacts:
+      - financne_indexy/build/app/outputs/flutter-apk/app-release.apk
+      - APK/financne_indexy/build/app/outputs/flutter-apk/app-release.apk

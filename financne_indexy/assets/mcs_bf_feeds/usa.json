@@ -1,0 +1,16 @@
+{
+  "region": "USA",
+  "updatedAt": "",
+  "sources": {
+    "breadth50": "real breadth feed",
+    "breadth200": "real breadth feed",
+    "sentimentZ": "real sentiment feed",
+    "volatility": "VIX / local volatility feed"
+  },
+  "series": {
+    "breadth50": [],
+    "breadth200": [],
+    "sentimentZ": [],
+    "volatility": []
+  }
+}
