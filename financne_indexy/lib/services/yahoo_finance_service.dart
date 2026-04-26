@@ -21,7 +21,14 @@ class YahooFinanceService {
       throw Exception('Chyba servera: ${response.statusCode}');
     }
     final json = jsonDecode(response.body);
-    final result = json['chart']['result'];
+    final chart = json['chart'];
+    final error = chart['error'];
+    if (error != null) {
+      final description =
+          (error['description'] ?? 'Neznáma chyba Yahoo Finance').toString();
+      throw Exception(description);
+    }
+    final result = chart['result'];
     if (result == null || (result as List).isEmpty) {
       throw Exception('Žiadne dáta: $ticker');
     }
@@ -40,5 +47,18 @@ class YahooFinanceService {
     }
     return days;
   }
-}
 
+  static Future<String?> validateTicker(String ticker) async {
+    try {
+      final data = await fetchData(ticker);
+      if (data.isEmpty) {
+        return 'Yahoo Finance nevrátil žiadne použiteľné denné dáta pre ticker $ticker.';
+      }
+      return null;
+    } catch (e) {
+      final raw = e.toString();
+      final message = raw.startsWith('Exception: ') ? raw.substring(11) : raw;
+      return 'Ticker $ticker sa nepodarilo načítať z Yahoo Finance. $message';
+    }
+  }
+}
