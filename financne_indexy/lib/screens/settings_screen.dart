@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/app_models.dart';
+import '../services/yahoo_finance_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Set<String> selectedTickers;
@@ -212,63 +213,118 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final result = await showDialog<Object?>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Vlastný index ${slotIndex + 1}'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(labelText: 'Názov'),
+      builder: (dialogContext) {
+        bool isChecking = false;
+        String? validationError;
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text('Vlastný index ${slotIndex + 1}'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(labelText: 'Názov'),
+                  ),
+                  TextField(
+                    controller: tickerController,
+                    textCapitalization: TextCapitalization.characters,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Yahoo ticker',
+                      helperText: 'Musí ísť o symbol, pre ktorý Yahoo Finance vracia historické dáta.',
+                    ),
+                  ),
+                  TextField(
+                    controller: descController,
+                    minLines: 2,
+                    maxLines: 3,
+                    decoration: const InputDecoration(labelText: 'Popis'),
+                  ),
+                  if (validationError != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      validationError!,
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              TextField(
-                controller: tickerController,
-                textCapitalization: TextCapitalization.characters,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(labelText: 'Yahoo ticker'),
+            ),
+            actions: [
+              if (current != null)
+                TextButton(
+                  onPressed: isChecking
+                      ? null
+                      : () => Navigator.pop(dialogContext, 'delete'),
+                  child: const Text('Vymazať'),
+                ),
+              TextButton(
+                onPressed: isChecking ? null : () => Navigator.pop(dialogContext),
+                child: const Text('Zrušiť'),
               ),
-              TextField(
-                controller: descController,
-                minLines: 2,
-                maxLines: 3,
-                decoration: const InputDecoration(labelText: 'Popis'),
+              FilledButton(
+                onPressed: isChecking
+                    ? null
+                    : () async {
+                        final name = nameController.text.trim();
+                        final ticker = tickerController.text.trim().toUpperCase();
+                        final desc = descController.text.trim();
+                        if (name.isEmpty || ticker.isEmpty) {
+                          setDialogState(() {
+                            validationError = 'Vyplň názov aj Yahoo ticker.';
+                          });
+                          return;
+                        }
+
+                        setDialogState(() {
+                          isChecking = true;
+                          validationError = null;
+                        });
+
+                        final error = await YahooFinanceService.validateTicker(
+                          ticker,
+                        );
+
+                        if (!mounted) return;
+
+                        if (error != null) {
+                          setDialogState(() {
+                            isChecking = false;
+                            validationError = error;
+                          });
+                          return;
+                        }
+
+                        Navigator.pop(
+                          dialogContext,
+                          FinancialIndex(
+                            name: name,
+                            ticker: ticker,
+                            color: Color(0xFF607D8B + (slotIndex * 0x000A0A0A)),
+                            region: 'Vlastné',
+                            desc: desc.isEmpty ? 'Vlastný sledovaný index' : desc,
+                          ),
+                        );
+                      },
+                child: isChecking
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Uložiť'),
               ),
             ],
           ),
-        ),
-        actions: [
-          if (current != null)
-            TextButton(
-              onPressed: () => Navigator.pop(context, 'delete'),
-              child: const Text('Vymazať'),
-            ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Zrušiť'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final name = nameController.text.trim();
-              final ticker = tickerController.text.trim();
-              final desc = descController.text.trim();
-              if (name.isEmpty || ticker.isEmpty) return;
-              Navigator.pop(
-                context,
-                FinancialIndex(
-                  name: name,
-                  ticker: ticker,
-                  color: Color(0xFF607D8B + (slotIndex * 0x000A0A0A)),
-                  region: 'Vlastné',
-                  desc: desc.isEmpty ? 'Vlastný sledovaný index' : desc,
-                ),
-              );
-            },
-            child: const Text('Uložiť'),
-          ),
-        ],
-      ),
+        );
+      },
     );
 
     nameController.dispose();
