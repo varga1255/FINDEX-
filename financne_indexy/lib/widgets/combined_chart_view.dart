@@ -563,17 +563,6 @@ class _CombinedChartViewState extends State<CombinedChartView>
     }
   }
 
-  String _mcsSignalLabel(McsSignal signal) {
-    switch (signal) {
-      case McsSignal.kup:
-        return 'KÚP';
-      case McsSignal.predaj:
-        return 'PREDAJ';
-      case McsSignal.podrz:
-        return 'PODRŽ';
-    }
-  }
-
   String _mcsSignalBubbleLabel(McsSignal signal) {
     switch (signal) {
       case McsSignal.kup:
@@ -697,6 +686,22 @@ class _CombinedChartViewState extends State<CombinedChartView>
                 ),
               ),
               TextSpan(
+                text: _kPeriods[_periodIdx].label,
+                style: const TextStyle(
+                  color: Color(0xFF1F2937),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                ),
+              ),
+              const TextSpan(
+                text: ' | ',
+                style: TextStyle(
+                  color: Color(0xFF1F2937),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                ),
+              ),
+              TextSpan(
                 text: 'MCS zdôvodnenie',
                 style: TextStyle(
                   color: signalColor,
@@ -721,50 +726,62 @@ class _CombinedChartViewState extends State<CombinedChartView>
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: snapshot.buyPlus ? 64 : 52,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      color: bubbleColor,
-                      borderRadius: BorderRadius.circular(999),
-                      boxShadow: snapshot.buyPlus
-                          ? [
-                              BoxShadow(
-                                color: bubbleColor.withOpacity(0.35),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      bubbleLabel,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
+                  Row(
+                    children: [
+                      Container(
+                        width: snapshot.buyPlus ? 64 : 52,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: bubbleColor,
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: snapshot.buyPlus
+                              ? [
+                                  BoxShadow(
+                                    color: bubbleColor.withOpacity(0.35),
+                                    blurRadius: 8,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          bubbleLabel,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                          ),
+                        ),
                       ),
-                    ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: bubbleColor,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text(
+                          'Zavrieť',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 14),
                   Text(
                     _mcsSignalExplanation(index, snapshot),
                     style: const TextStyle(fontSize: 14, height: 1.45),
                   ),
-                  const SizedBox(height: 18),
-                  Text(
-                    'MCS / MCS+ · ${_kPeriods[_periodIdx].label}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: bubbleColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 14),
                   Container(
-                    height: 170,
+                    height: 120,
                     padding: const EdgeInsets.fromLTRB(8, 12, 12, 8),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF8FAFC),
@@ -935,7 +952,7 @@ class _CombinedChartViewState extends State<CombinedChartView>
                                 LineChartBarData(
                                   isCurved: true,
                                   curveSmoothness: 0.28,
-                                  color: index.color,
+                                  color: const Color(0xFF9CA3AF),
                                   barWidth: 2.2,
                                   spots: [
                                     for (var i = 0; i < periodHistory.length; i++)
@@ -966,22 +983,119 @@ class _CombinedChartViewState extends State<CombinedChartView>
                           ),
                         ),
                   ),
+                  const SizedBox(height: 14),
+                  _buildModalMcsDetails(index, snapshot),
                 ],
               ),
             ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              foregroundColor: bubbleColor,
-            ),
-            child: const Text(
-              'Zavrieť',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
+      ),
+    );
+  }
+
+  Widget _buildModalMcsDetails(
+    FinancialIndex index,
+    McsSignalSnapshot snapshot,
+  ) {
+    final signal = snapshot.signal;
+    final latestSeries = widget.allData[index.ticker];
+    final latest =
+        latestSeries != null && latestSeries.isNotEmpty ? latestSeries.last : null;
+    final reasons = signal?.reasonFlags ?? const <String>[];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSplitDetailLine(
+            leftLabel: 'MCS',
+            leftValue: signal?.mcs?.toStringAsFixed(1) ?? 'N/A',
+            rightLabel: 'Cena',
+            rightValue: latest != null ? _fmtVal(latest.close) : '—',
           ),
+          const SizedBox(height: 2),
+          _buildDetailLine('Breadth', snapshot.breadthSource),
+          const SizedBox(height: 2),
+          _buildDetailLine('Sentiment', snapshot.sentimentSource),
+          const SizedBox(height: 2),
+          _buildDetailLine('Volatilita', snapshot.volatilitySource),
+          const SizedBox(height: 4),
+          _buildDetailLine(
+            'Režim',
+            widget.disableTwoDayBuyConfirmation
+                ? 'bez 2-dňového potvrdenia KÚP'
+                : 's 2-dňovým potvrdením KÚP',
+          ),
+          const SizedBox(height: 2),
+          _buildDetailLine(
+            'Drawdown filter',
+            widget.useDrawdownAndStrictBreadthFilters ? 'zapnuté' : 'vypnuté',
+          ),
+          if (reasons.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            _buildDetailLine(
+              'Dôvody',
+              reasons.map(_reasonLabel).join(', '),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSplitDetailLine({
+    required String leftLabel,
+    required String leftValue,
+    required String rightLabel,
+    required String rightValue,
+  }) {
+    return Row(
+      children: [
+        Expanded(child: _buildDetailLine(leftLabel, leftValue)),
+        const SizedBox(width: 12),
+        RichText(
+          textAlign: TextAlign.right,
+          text: TextSpan(
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF1F2937),
+              height: 1.45,
+            ),
+            children: [
+              TextSpan(
+                text: '$rightLabel: ',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              TextSpan(text: rightValue),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailLine(String label, String value) {
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(
+          fontSize: 12,
+          color: Color(0xFF1F2937),
+          height: 1.45,
+        ),
+        children: [
+          TextSpan(
+            text: '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          TextSpan(text: value),
         ],
       ),
     );
@@ -1310,8 +1424,8 @@ class _CombinedChartViewState extends State<CombinedChartView>
                                     children: [
                                       TextSpan(
                                         text: idx.name,
-                                        style: const TextStyle(
-                                          color: Color(0xFF1F2937),
+                                        style: TextStyle(
+                                          color: idx.color,
                                           fontSize: 11,
                                           fontWeight: FontWeight.w700,
                                         ),
@@ -1336,206 +1450,6 @@ class _CombinedChartViewState extends State<CombinedChartView>
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          if (_signalIndices.isNotEmpty)
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'MCS-BF signál',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Ak sú pre región dostupné reálne feedy, algoritmus ich použije prednostne. Inak sa použije proxy fallback.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[600],
-                        height: 1.45,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.disableTwoDayBuyConfirmation
-                          ? 'Režim: bez 2-dňového potvrdenia KÚP'
-                          : 'Režim: s 2-dňovým potvrdením KÚP',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.useDrawdownAndStrictBreadthFilters
-                          ? 'Drawdown + prísny breadth filter: zapnuté'
-                          : 'Drawdown + prísny breadth filter: vypnuté',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ..._signalIndices.map((idx) {
-                      final snapshot = mcsResults[idx.ticker]!.snapshot;
-                      final signal = snapshot.signal;
-                      final latestSeries = widget.allData[idx.ticker];
-                      final latest =
-                          latestSeries != null && latestSeries.isNotEmpty
-                          ? latestSeries.last
-                          : null;
-                      final reasons = signal?.reasonFlags ?? const <String>[];
-                      final mcsColor = _mcsSignalColor(
-                        signal?.finalSignal ?? McsSignal.podrz,
-                      );
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade200),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    color: idx.color,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    idx.name,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: mcsColor.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Text(
-                                    _mcsSignalLabel(
-                                      signal?.finalSignal ?? McsSignal.podrz,
-                                    ),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: mcsColor,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            if (signal?.mcs != null)
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  _MetricPill(
-                                    label: 'MCS',
-                                    value: signal!.mcs!.toStringAsFixed(1),
-                                  ),
-                                  _MetricPill(
-                                    label: 'Vol %il',
-                                    value: signal.volatilityPercentile!
-                                        .toStringAsFixed(1),
-                                  ),
-                                  _MetricPill(
-                                    label: 'Breadth50',
-                                    value: signal.breadth50!.toStringAsFixed(1),
-                                  ),
-                                  _MetricPill(
-                                    label: 'Cena',
-                                    value: latest != null
-                                        ? _fmtVal(latest.close)
-                                        : '—',
-                                  ),
-                                ],
-                              )
-                            else
-                              Text(
-                                'Na plný výpočet ešte chýba dostatočná história dát.',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            const SizedBox(height: 10),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
-                              children: [
-                                _MetricPill(
-                                  label: 'Breadth',
-                                  value: snapshot.breadthSource,
-                                ),
-                                _MetricPill(
-                                  label: 'Sentiment',
-                                  value: snapshot.sentimentSource,
-                                ),
-                                _MetricPill(
-                                  label: 'Volatilita',
-                                  value: snapshot.volatilitySource,
-                                ),
-                              ],
-                            ),
-                            if (reasons.isNotEmpty) ...[
-                              const SizedBox(height: 10),
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                children: reasons
-                                    .map(
-                                      (flag) => Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey.shade100,
-                                          borderRadius: BorderRadius.circular(999),
-                                        ),
-                                        child: Text(
-                                          _reasonLabel(flag),
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: Colors.grey[700],
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-                            ],
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-            ),
           const SizedBox(height: 16),
           Text(
             'Zmena · ${_kPeriods[_periodIdx].desc}',
@@ -1680,8 +1594,8 @@ class _CombinedChartViewState extends State<CombinedChartView>
                                       ? _buyPlusPulse
                                       : const AlwaysStoppedAnimation<double>(1),
                                   child: Container(
-                                    width: snapshot.buyPlus ? 36 : 28,
-                                    height: snapshot.buyPlus ? 12 : 10,
+                                    width: snapshot.buyPlus ? 43 : 34,
+                                    height: snapshot.buyPlus ? 14 : 12,
                                     decoration: BoxDecoration(
                                       color: signalBubbleColor,
                                       borderRadius: BorderRadius.circular(999),
@@ -1702,7 +1616,7 @@ class _CombinedChartViewState extends State<CombinedChartView>
                                       maxLines: 1,
                                       overflow: TextOverflow.visible,
                                       style: const TextStyle(
-                                        fontSize: 5.2,
+                                        fontSize: 6.2,
                                         height: 1.0,
                                         fontWeight: FontWeight.w800,
                                         color: Colors.white,
