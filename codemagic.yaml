@@ -54,20 +54,45 @@ workflows:
             if ! grep -q 'isCoreLibraryDesugaringEnabled = true' android/app/build.gradle.kts; then
               perl -0pi -e 's|compileOptions\s*\{\s*|compileOptions {\n        isCoreLibraryDesugaringEnabled = true\n|' android/app/build.gradle.kts
             fi
-            if ! grep -q 'desugar_jdk_libs' android/app/build.gradle.kts; then
-              perl -0pi -e 's|dependencies\s*\{\s*|dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n|' android/app/build.gradle.kts
+            if grep -q 'dependencies\s*{' android/app/build.gradle.kts; then
+              if ! grep -q 'desugar_jdk_libs' android/app/build.gradle.kts; then
+                perl -0pi -e 's|dependencies\s*\{\s*|dependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n|' android/app/build.gradle.kts
+              fi
+            else
+              cat >> android/app/build.gradle.kts <<'EOF'
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+}
+EOF
             fi
           elif [ -f android/app/build.gradle ]; then
             if ! grep -q 'coreLibraryDesugaringEnabled true' android/app/build.gradle; then
               perl -0pi -e 's|compileOptions\s*\{\s*|compileOptions {\n        coreLibraryDesugaringEnabled true\n|' android/app/build.gradle
             fi
-            if ! grep -q 'desugar_jdk_libs' android/app/build.gradle; then
-              perl -0pi -e "s|dependencies\\s*\\{\\s*|dependencies {\\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\\n|" android/app/build.gradle
+            if grep -q 'dependencies\s*{' android/app/build.gradle; then
+              if ! grep -q 'desugar_jdk_libs' android/app/build.gradle; then
+                perl -0pi -e "s|dependencies\\s*\\{\\s*|dependencies {\\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\\n|" android/app/build.gradle
+              fi
+            else
+              cat >> android/app/build.gradle <<'EOF'
+
+dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+}
+EOF
             fi
           else
             echo "Android app Gradle subor sa nenasiel."
             find android -maxdepth 3 -type f | sort
             exit 1
+          fi
+
+          echo "===== android/app/build.gradle(.kts) po uprave ====="
+          if [ -f android/app/build.gradle.kts ]; then
+            cat android/app/build.gradle.kts
+          else
+            cat android/app/build.gradle
           fi
 
       - name: Stiahni zavislosti
