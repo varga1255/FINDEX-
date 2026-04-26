@@ -193,9 +193,9 @@ class _HomeScreenState extends State<HomeScreen> {
     List<FinancialIndex> signalIndices,
     Map<String, List<DayData>> allData,
     int period,
-    {List<FinancialIndex>? sourceIndices},
+    List<FinancialIndex> sourceIndices,
   ) {
-    final indices = sourceIndices ?? signalIndices;
+    final indices = sourceIndices;
     final dates = <DateTime>{};
     final priceMaps = <String, Map<DateTime, DayData>>{};
     final averageMaps = <String, Map<DateTime, double?>>{};
@@ -228,9 +228,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<DateTime, double?> _buildSentimentProxyMap(
     List<FinancialIndex> signalIndices,
     Map<String, List<DayData>> allData,
-    {List<FinancialIndex>? sourceIndices},
+    List<FinancialIndex> sourceIndices,
   ) {
-    final indices = sourceIndices ?? signalIndices;
+    final indices = sourceIndices;
     final perDateValues = <DateTime, List<double>>{};
 
     for (final idx in indices) {
@@ -430,9 +430,23 @@ class _HomeScreenState extends State<HomeScreen> {
     final series = allData[sp500Index.ticker] ?? const <DayData>[];
     if (series.isEmpty) return null;
 
-    final breadth50ByDate = _buildBreadthMap(signalIndices, allData, 50);
-    final breadth200ByDate = _buildBreadthMap(signalIndices, allData, 200);
-    final sentimentByDate = _buildSentimentProxyMap(signalIndices, allData);
+    final breadth50ByDate = _buildBreadthMap(
+      signalIndices,
+      allData,
+      50,
+      signalIndices,
+    );
+    final breadth200ByDate = _buildBreadthMap(
+      signalIndices,
+      allData,
+      200,
+      signalIndices,
+    );
+    final sentimentByDate = _buildSentimentProxyMap(
+      signalIndices,
+      allData,
+      signalIndices,
+    );
     final vixByDate = _seriesMap(allData['^VIX'] ?? const <DayData>[]);
     final region = _regionForIndex(sp500Index);
     final feedBundle = region == null ? null : feedLibrary.bundleForRegion(region);
@@ -482,18 +496,18 @@ class _HomeScreenState extends State<HomeScreen> {
         signalIndices,
         allData,
         50,
-        sourceIndices: plusPeers,
+        plusPeers,
       );
       final plusBreadth200ByDate = _buildBreadthMap(
         signalIndices,
         allData,
         200,
-        sourceIndices: plusPeers,
+        plusPeers,
       );
       final plusSentimentByDate = _buildSentimentProxyMap(
         signalIndices,
         allData,
-        sourceIndices: plusPeers,
+        plusPeers,
       );
       final plusInputs = series.map((day) {
         final date = _dateOnly(day.date);
