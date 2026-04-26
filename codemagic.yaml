@@ -37,6 +37,26 @@ workflows:
           cp /tmp/financne_indexy_backup/pubspec.yaml pubspec.yaml
           cp /tmp/financne_indexy_backup/main.dart lib/main.dart
 
+      - name: Nastav nazov aplikacie
+        script: |
+          cd "$PROJECT_DIR"
+          if [ -f android/app/src/main/res/values/strings.xml ]; then
+            perl -0pi -e 's|<string name="app_name">.*?</string>|<string name="app_name">FINDEX</string>|' android/app/src/main/res/values/strings.xml
+          else
+            echo "Android strings.xml sa nenasiel."
+            find android -maxdepth 5 -type f | sort
+            exit 1
+          fi
+
+          if grep -q 'android:label="@string/app_name"' android/app/src/main/AndroidManifest.xml; then
+            echo "Android label uz pouziva @string/app_name"
+          else
+            perl -0pi -e 's|android:label="[^"]*"|android:label="@string/app_name"|' android/app/src/main/AndroidManifest.xml
+          fi
+
+          echo "===== android/app/src/main/res/values/strings.xml ====="
+          cat android/app/src/main/res/values/strings.xml
+
       - name: Pridaj Android permissions
         script: |
           cd "$PROJECT_DIR"
