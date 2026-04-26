@@ -11,6 +11,7 @@ import '../models/app_models.dart';
 import '../services/yahoo_finance_service.dart';
 import '../widgets/combined_chart_view.dart';
 import 'settings_screen.dart';
+import 'user_guide_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -585,6 +586,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _openUserGuide() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const UserGuideScreen()),
+    );
+  }
+
   Widget _buildWelcome() {
     return Center(
       child: Padding(
@@ -592,6 +600,31 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFF1565C0), width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 8,
+                  ),
+                ],
+              ),
+              child: IconButton(
+                onPressed: _openUserGuide,
+                tooltip: 'Používateľská príručka',
+                icon: const Icon(
+                  Icons.info_outline,
+                  color: Color(0xFF1565C0),
+                  size: 22,
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
             Icon(Icons.show_chart, size: 72, color: Colors.grey[300]),
             const SizedBox(height: 20),
             const Text(
@@ -672,6 +705,11 @@ class _HomeScreenState extends State<HomeScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            onPressed: _openUserGuide,
+            tooltip: 'Používateľská príručka',
+          ),
           IconButton(
             icon: const Icon(Icons.tune),
             onPressed: _openSettings,
