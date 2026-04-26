@@ -193,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
     List<FinancialIndex> signalIndices,
     Map<String, List<DayData>> allData,
     int period,
-    [List<FinancialIndex>? sourceIndices],
+    {List<FinancialIndex>? sourceIndices},
   ) {
     final indices = sourceIndices ?? signalIndices;
     final dates = <DateTime>{};
@@ -228,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<DateTime, double?> _buildSentimentProxyMap(
     List<FinancialIndex> signalIndices,
     Map<String, List<DayData>> allData,
-    [List<FinancialIndex>? sourceIndices],
+    {List<FinancialIndex>? sourceIndices},
   ) {
     final indices = sourceIndices ?? signalIndices;
     final perDateValues = <DateTime, List<double>>{};
@@ -482,18 +482,18 @@ class _HomeScreenState extends State<HomeScreen> {
         signalIndices,
         allData,
         50,
-        plusPeers,
+        sourceIndices: plusPeers,
       );
       final plusBreadth200ByDate = _buildBreadthMap(
         signalIndices,
         allData,
         200,
-        plusPeers,
+        sourceIndices: plusPeers,
       );
       final plusSentimentByDate = _buildSentimentProxyMap(
         signalIndices,
         allData,
-        plusPeers,
+        sourceIndices: plusPeers,
       );
       final plusInputs = series.map((day) {
         final date = _dateOnly(day.date);
