@@ -579,7 +579,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(Icons.show_chart, size: 72, color: Colors.grey[300]),
             const SizedBox(height: 20),
             const Text(
-              'Finančné indexy',
+              'Market Composite Signal',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -637,7 +637,9 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              _appBarBuyPlus ? 'Finančné indexy ++' : 'Finančné indexy',
+              _appBarBuyPlus
+                  ? 'Market Composite Signal ++'
+                  : 'Market Composite Signal',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
             ),
             if (_dataDate != null)
