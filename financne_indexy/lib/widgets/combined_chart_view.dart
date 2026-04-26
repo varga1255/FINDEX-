@@ -36,6 +36,10 @@ const _kPeriods = [
   (label: '2T', days: 10, desc: 'posledné 2 týždne', maxPoints: 7),
   (label: '1M', days: 21, desc: 'posledný mesiac', maxPoints: 15),
   (label: '3M', days: 63, desc: 'posledné 3 mesiace', maxPoints: 15),
+  (label: '6M', days: 126, desc: 'posledných 6 mesiacov', maxPoints: 18),
+  (label: '1Y', days: 252, desc: 'posledný rok', maxPoints: 20),
+  (label: '2Y', days: 504, desc: 'posledné 2 roky', maxPoints: 22),
+  (label: '5Y', days: 1260, desc: 'posledných 5 rokov', maxPoints: 26),
 ];
 
 class _McsHistoryPoint {
@@ -1122,19 +1126,32 @@ class _CombinedChartViewState extends State<CombinedChartView>
 
   @override
   Widget build(BuildContext context) {
-    final refDates = _refDates;
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
     final mcsResults = _buildMcsResults();
 
+    final visibleSeries = widget.activeIndices
+        .where((idx) => !_hiddenTickers.contains(idx.ticker))
+        .map((idx) {
+          final data = _slice(idx.ticker);
+          return (index: idx, data: data, spots: _pctSpots(data));
+        })
+        .where((series) => series.spots.isNotEmpty)
+        .toList();
+
+    List<DateTime> refDates = [];
+    for (final series in visibleSeries) {
+      if (series.data.length > refDates.length) {
+        refDates = series.data.map((day) => day.date).toList();
+      }
+    }
+
     final lineBars = <LineChartBarData>[];
-    for (final idx in widget.activeIndices) {
-      if (_hiddenTickers.contains(idx.ticker)) continue;
-      final spots = _pctSpots(_slice(idx.ticker));
-      if (spots.isEmpty) continue;
+    for (final series in visibleSeries) {
+      final idx = series.index;
       lineBars.add(
         LineChartBarData(
-          spots: spots,
+          spots: series.spots,
           isCurved: true,
           curveSmoothness: 0.3,
           color: idx.color,
@@ -1154,10 +1171,8 @@ class _CombinedChartViewState extends State<CombinedChartView>
     }
 
     double minY = 0, maxY = 0;
-    for (final idx in widget.activeIndices) {
-      if (_hiddenTickers.contains(idx.ticker)) continue;
-      final data = _slice(idx.ticker);
-      if (data.isEmpty) continue;
+    for (final series in visibleSeries) {
+      final data = series.data;
       final first = data.first.close;
       for (final d in data) {
         final pct = ((d.close - first) / first) * 100;
@@ -1182,55 +1197,57 @@ class _CombinedChartViewState extends State<CombinedChartView>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Expanded(
-                        child: Text(
-                          'Porovnanie indexov',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      const Text(
+                        'Obdobie',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: List.generate(_kPeriods.length, (i) {
-                            final selected = i == _periodIdx;
-                            return GestureDetector(
-                              onTap: () => setState(() => _periodIdx = i),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 180),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: selected
-                                      ? const Color(0xFF1565C0)
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(7),
-                                ),
-                                child: Text(
-                                  _kPeriods[i].label,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
+                      const SizedBox(height: 8),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: List.generate(_kPeriods.length, (i) {
+                              final selected = i == _periodIdx;
+                              return GestureDetector(
+                                onTap: () => setState(() => _periodIdx = i),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
                                     color: selected
-                                        ? Colors.white
-                                        : Colors.grey[600],
+                                        ? const Color(0xFF1565C0)
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(7),
+                                  ),
+                                  child: Text(
+                                    _kPeriods[i].label,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: selected
+                                          ? Colors.white
+                                          : Colors.grey[600],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          }),
+                              );
+                            }),
+                          ),
                         ),
                       ),
                     ],
@@ -1392,15 +1409,13 @@ class _CombinedChartViewState extends State<CombinedChartView>
                                 vertical: 8,
                               ),
                               getTooltipItems: (touchedSpots) {
-                                final slices = widget.activeIndices
-                                    .map((i) => _slice(i.ticker))
-                                    .toList();
                                 return touchedSpots.asMap().entries.map((entry) {
                                   final spot = entry.value;
                                   final barIdx = spot.barIndex;
-                                  final idx = barIdx < widget.activeIndices.length
-                                      ? widget.activeIndices[barIdx]
-                                      : widget.activeIndices[0];
+                                  final series = barIdx < visibleSeries.length
+                                      ? visibleSeries[barIdx]
+                                      : visibleSeries.first;
+                                  final idx = series.index;
                                   final dayIdx = spot.x.toInt();
                                   final dateStr = (entry.key == 0 &&
                                           dayIdx >= 0 &&
@@ -1409,7 +1424,7 @@ class _CombinedChartViewState extends State<CombinedChartView>
                                           refDates[dayIdx],
                                         )
                                       : '';
-                                  final data = slices[barIdx];
+                                  final data = series.data;
                                   final price = (dayIdx >= 0 && dayIdx < data.length)
                                       ? _fmtVal(data[dayIdx].close)
                                       : '';
