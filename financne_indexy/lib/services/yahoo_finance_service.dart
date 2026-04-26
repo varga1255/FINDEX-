@@ -8,7 +8,7 @@ class YahooFinanceService {
   static Future<List<DayData>> fetchData(String ticker) async {
     final encoded = Uri.encodeComponent(ticker);
     final uri = Uri.parse(
-      'https://query1.finance.yahoo.com/v8/finance/chart/$encoded?interval=1d&range=18mo',
+      'https://query1.finance.yahoo.com/v8/finance/chart/$encoded?interval=1d&range=6y',
     );
     final response = await http.get(
       uri,
