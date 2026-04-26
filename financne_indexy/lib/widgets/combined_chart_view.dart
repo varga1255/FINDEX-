@@ -1383,7 +1383,7 @@ class _CombinedChartViewState extends State<CombinedChartView>
                     ),
                     const SizedBox(height: 12),
                     ..._signalIndices.map((idx) {
-                      final snapshot = mcsSignals[idx.ticker]!;
+                      final snapshot = mcsResults[idx.ticker]!.snapshot;
                       final signal = snapshot.signal;
                       final latestSeries = widget.allData[idx.ticker];
                       final latest =
