@@ -1200,12 +1200,47 @@ class _CombinedChartViewState extends State<CombinedChartView>
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Obdobie',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Obdobie',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Obnov dáta',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.normal,
+                                  color: Colors.green[700],
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: widget.onRetry,
+                                icon: const Icon(
+                                  Icons.refresh,
+                                  color: Color(0xFF2E7D32),
+                                ),
+                                tooltip: 'Načítať / obnoviť dáta',
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 24,
+                                  minHeight: 24,
+                                ),
+                                splashRadius: 18,
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       SingleChildScrollView(
