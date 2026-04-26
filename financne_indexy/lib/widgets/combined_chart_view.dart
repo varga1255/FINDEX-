@@ -1652,9 +1652,29 @@ class _CombinedChartViewState extends State<CombinedChartView>
           ),
           const SizedBox(height: 12),
           Center(
-            child: Text(
-              'Zdroj dát: Yahoo Finance',
-              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+            child: Column(
+              children: [
+                Text(
+                  'Created by Peter Varga',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Zdroj dát: Yahoo Finance',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                ),
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    'Minulé výnosy sú užitočné na pochopenie histórie aktíva, ale investičné rozhodnutia by mali byť založené na budúcich očakávaniach, vašich cieľoch a tolerancii rizika, nie na naivnej viere, že graf pôjde donekonečna smerom nahor 🙂',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10.5, color: Colors.grey[600], height: 1.35),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
