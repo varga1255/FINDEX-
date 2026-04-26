@@ -88,11 +88,21 @@ class _HomeScreenState extends State<HomeScreen> {
       if (decoded is! List) return const [];
       return decoded
           .whereType<Map>()
-          .map((item) {
+          .toList()
+          .asMap()
+          .entries
+          .map((entry) {
+            final slotIndex = entry.key;
+            final item = entry.value;
+            final fallbackColor =
+                kCustomIndexColors[slotIndex % kCustomIndexColors.length];
+            final rawColor = (item['color'] as num?)?.toInt();
             return FinancialIndex(
               name: (item['name'] ?? '').toString(),
               ticker: (item['ticker'] ?? '').toString(),
-              color: Color((item['color'] as num?)?.toInt() ?? 0xFF607D8B),
+              color: _looksLikeLegacyCustomGray(rawColor)
+                  ? fallbackColor
+                  : Color(rawColor ?? fallbackColor.value),
               region: 'Vlastné',
               desc: (item['desc'] ?? '').toString(),
             );
@@ -104,6 +114,12 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (_) {
       return const [];
     }
+  }
+
+  bool _looksLikeLegacyCustomGray(int? colorValue) {
+    if (colorValue == null) return true;
+    return colorValue >= 0xFF607D8B &&
+        colorValue <= 0xFF607D8B + ((kCustomIndexSlots - 1) * 0x000A0A0A);
   }
 
   String _encodeCustomIndices(List<FinancialIndex> indices) {
