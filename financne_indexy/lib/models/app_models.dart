@@ -140,3 +140,16 @@ const String kUseDrawdownAndStrictBreadthFiltersPrefKey =
 const String kDisableTwoDayBuyConfirmationPrefKey =
     'disableTwoDayBuyConfirmation';
 const int kCustomIndexSlots = 10;
+
+const List<Color> kCustomIndexColors = [
+  Color(0xFF607D8B),
+  Color(0xFF5C6BC0),
+  Color(0xFF00897B),
+  Color(0xFF8E24AA),
+  Color(0xFFEF6C00),
+  Color(0xFF455A64),
+  Color(0xFF7CB342),
+  Color(0xFFD81B60),
+  Color(0xFF3949AB),
+  Color(0xFF6D4C41),
+];
