@@ -43,15 +43,15 @@ workflows:
           mkdir -p android/app/src/main/res/values
           if [ -f android/app/src/main/res/values/strings.xml ]; then
             if grep -q '<string name="app_name">' android/app/src/main/res/values/strings.xml; then
-              perl -0pi -e 's|<string name="app_name">.*?</string>|<string name="app_name">FINDEX</string>|' android/app/src/main/res/values/strings.xml
+              perl -0pi -e 's|<string name="app_name">.*?</string>|<string name="app_name">MACOS</string>|' android/app/src/main/res/values/strings.xml
             else
-              perl -0pi -e 's|</resources>|    <string name="app_name">FINDEX</string>\n</resources>|' android/app/src/main/res/values/strings.xml
+              perl -0pi -e 's|</resources>|    <string name="app_name">MACOS</string>\n</resources>|' android/app/src/main/res/values/strings.xml
             fi
           else
             printf '%s\n' \
               '<?xml version="1.0" encoding="utf-8"?>' \
               '<resources>' \
-              '    <string name="app_name">FINDEX</string>' \
+              '    <string name="app_name">MACOS</string>' \
               '</resources>' > android/app/src/main/res/values/strings.xml
           fi
 
