@@ -307,7 +307,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           FinancialIndex(
                             name: name,
                             ticker: ticker,
-                            color: Color(0xFF607D8B + (slotIndex * 0x000A0A0A)),
+                            color: kCustomIndexColors[
+                              slotIndex % kCustomIndexColors.length
+                            ],
                             region: 'Vlastné',
                             desc: desc.isEmpty ? 'Vlastný sledovaný index' : desc,
                           ),
