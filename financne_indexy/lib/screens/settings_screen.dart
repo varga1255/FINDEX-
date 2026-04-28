@@ -1,7 +1,16 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 
 import '../models/app_models.dart';
 import '../services/yahoo_finance_service.dart';
+
+enum _CustomImportMode {
+  append,
+  replace,
+}
 
 class SettingsScreen extends StatefulWidget {
   final Set<String> selectedTickers;
@@ -22,6 +31,13 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  static const _kExportTypeGroup = XTypeGroup(
+    label: 'JSON',
+    extensions: ['json'],
+    mimeTypes: ['application/json', 'text/plain'],
+    uniformTypeIdentifiers: ['public.json'],
+  );
+
   late Set<String> _selected;
   late List<FinancialIndex?> _customSlots;
   late bool _useDrawdownAndStrictBreadthFilters;
@@ -44,6 +60,303 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _customSlots.whereType<FinancialIndex>().toList();
 
   List<FinancialIndex> get _allIndices => [...kAllIndices, ..._customIndices];
+
+  String get _exportFileName {
+    final now = DateTime.now();
+    final year = now.year.toString().padLeft(4, '0');
+    final month = now.month.toString().padLeft(2, '0');
+    final day = now.day.toString().padLeft(2, '0');
+    return 'fimcos_custom_indices_${year}-${month}-${day}.json';
+  }
+
+  String _joinPath(String base, String name) {
+    if (base.endsWith(Platform.pathSeparator)) return '$base$name';
+    return '$base${Platform.pathSeparator}$name';
+  }
+
+  Map<String, Object?> _buildExportPayload() {
+    return {
+      'app': 'FIMCOS',
+      'type': 'custom_indices_export',
+      'format_version': 1,
+      'exported_at': DateTime.now().toUtc().toIso8601String(),
+      'custom_indices': _customIndices
+          .map(
+            (idx) => {
+              'name': idx.name,
+              'ticker': idx.ticker,
+              'desc': idx.desc,
+              'color': idx.color.value,
+            },
+          )
+          .toList(growable: false),
+    };
+  }
+
+  bool _isValidImportPayload(Object? payload) {
+    return payload is Map &&
+        payload['app'] == 'FIMCOS' &&
+        payload['type'] == 'custom_indices_export' &&
+        payload['custom_indices'] is List;
+  }
+
+  FinancialIndex? _normalizeImportedIndex(Object? raw) {
+    if (raw is! Map) return null;
+    final name = (raw['name'] ?? '').toString().trim();
+    final ticker = (raw['ticker'] ?? '').toString().trim().toUpperCase();
+    final desc = (raw['desc'] ?? '').toString().trim();
+    if (name.isEmpty || ticker.isEmpty) return null;
+    final colorValue = raw['color'] is num ? (raw['color'] as num).toInt() : null;
+    return FinancialIndex(
+      name: name,
+      ticker: ticker,
+      color: Color(colorValue ?? kCustomIndexColors.first.value),
+      region: 'Vlastné',
+      desc: desc.isEmpty ? 'Vlastný sledovaný index' : desc,
+    );
+  }
+
+  int _firstEmptyCustomSlot() {
+    for (int i = 0; i < _customSlots.length; i++) {
+      if (_customSlots[i] == null) return i;
+    }
+    return -1;
+  }
+
+  bool _tickerAlreadyExists(String ticker) {
+    return _allIndices.any((idx) => idx.ticker == ticker);
+  }
+
+  Future<void> _showMessageDialog(String title, String message) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showSuccessDialog(String title, String message) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportCustomIndices() async {
+    if (_customIndices.isEmpty) {
+      await _showMessageDialog(
+        'Export IDX',
+        'Nie sú definované žiadne vlastné indexy na export.',
+      );
+      return;
+    }
+
+    try {
+      String? savedPath;
+      final jsonText = const JsonEncoder.withIndent(
+        '  ',
+      ).convert(_buildExportPayload());
+
+      if (Platform.isAndroid) {
+        final directoryPath = await getDirectoryPath(
+          confirmButtonText: 'Vybrať priečinok',
+        );
+        if (directoryPath == null) return;
+        savedPath = _joinPath(directoryPath, _exportFileName);
+        await File(savedPath).writeAsString(jsonText);
+      } else {
+        final location = await getSaveLocation(
+          suggestedName: _exportFileName,
+          acceptedTypeGroups: const [_kExportTypeGroup],
+          confirmButtonText: 'Uložiť',
+        );
+        if (location == null) return;
+        savedPath = location.path;
+        await File(savedPath).writeAsString(jsonText);
+      }
+
+      if (!mounted || savedPath == null) return;
+      await _showSuccessDialog(
+        'Export bol úspešný',
+        'Exportovaný súbor bol uložený do:\n\n$savedPath',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      await _showMessageDialog(
+        'Export IDX',
+        'Export sa nepodaril.\n\n$error',
+      );
+    }
+  }
+
+  Future<_CustomImportMode?> _askImportMode() async {
+    return showDialog<_CustomImportMode?>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Import IDX'),
+        content: const Text('Vyber spôsob importu vlastných indexov.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Zrušiť'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, _CustomImportMode.replace),
+            child: const Text('Nahradiť existujúce'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, _CustomImportMode.append),
+            child: const Text('Pridať k existujúcim'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _askImportSingleIndex(FinancialIndex idx) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Import IDX'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Názov: ${idx.name}'),
+            const SizedBox(height: 6),
+            Text('Ticker: ${idx.ticker}'),
+            const SizedBox(height: 6),
+            Text('Popis: ${idx.desc}'),
+            const SizedBox(height: 6),
+            Text('Farba: #${idx.color.value.toRadixString(16).toUpperCase()}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Zrušiť import'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Preskočiť'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Importovať'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _importCustomIndices() async {
+    try {
+      final file = await openFile(
+        acceptedTypeGroups: const [_kExportTypeGroup],
+        confirmButtonText: 'Importovať',
+      );
+      if (file == null) return;
+
+      final rawText = await file.readAsString();
+      final decoded = jsonDecode(rawText);
+      if (!_isValidImportPayload(decoded)) {
+        await _showMessageDialog(
+          'Import IDX',
+          'Súbor nemá platný formát exportu FIMCOS.',
+        );
+        return;
+      }
+
+      final importMode = await _askImportMode();
+      if (importMode == null || !mounted) return;
+      if (importMode == _CustomImportMode.replace) {
+        await _showMessageDialog(
+          'Import IDX',
+          'Existujúce vlastné indexy sa nikdy nenahrádzajú.',
+        );
+        return;
+      }
+
+      final rawItems = (decoded as Map)['custom_indices'] as List;
+      var importedCount = 0;
+
+      for (final rawItem in rawItems) {
+        final imported = _normalizeImportedIndex(rawItem);
+        if (imported == null) continue;
+
+        if (_tickerAlreadyExists(imported.ticker)) {
+          if (!mounted) return;
+          await _showMessageDialog(
+            'Import IDX',
+            'Index ${imported.name} (${imported.ticker}) už v aplikácii existuje a bude preskočený.',
+          );
+          continue;
+        }
+
+        final emptySlot = _firstEmptyCustomSlot();
+        if (emptySlot < 0) {
+          await _showMessageDialog(
+            'Import IDX',
+            'Import bol zastavený. Došlo k prekročeniu kapacity 10 vlastných indexov.',
+          );
+          break;
+        }
+
+        final shouldImport = await _askImportSingleIndex(imported);
+        if (!mounted || shouldImport == null) return;
+        if (!shouldImport) continue;
+
+        setState(() {
+          _customSlots[emptySlot] = FinancialIndex(
+            name: imported.name,
+            ticker: imported.ticker,
+            color: imported.color,
+            region: 'Vlastné',
+            desc: imported.desc,
+          );
+          _selected.add(imported.ticker);
+        });
+        importedCount += 1;
+      }
+
+      if (!mounted) return;
+      await _showSuccessDialog(
+        'Import bol úspešný',
+        importedCount > 0
+            ? 'Importovaných indexov: $importedCount.\n\nNa potvrdenie zmien stlač Uložiť.'
+            : 'Neboli importované žiadne nové indexy.',
+      );
+    } on FormatException {
+      await _showMessageDialog(
+        'Import IDX',
+        'Súbor nemá platný formát exportu FIMCOS.',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      await _showMessageDialog(
+        'Import IDX',
+        'Import sa nepodaril.\n\n$error',
+      );
+    }
+  }
 
   Widget _buildMcsInfoCard() {
     final bodyStyle = TextStyle(
@@ -611,14 +924,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-                  child: const Text(
-                    'Vlastné',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1565C0),
-                      letterSpacing: 0.5,
-                    ),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Vlastné',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1565C0),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      OutlinedButton(
+                        onPressed: _exportCustomIndices,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF1565C0),
+                          side: const BorderSide(color: Color(0xFFCFE0FF)),
+                          backgroundColor: const Color(0xFFEEF5FF),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        child: const Text('Export IDX'),
+                      ),
+                      const SizedBox(width: 6),
+                      OutlinedButton(
+                        onPressed: _importCustomIndices,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF1565C0),
+                          side: const BorderSide(color: Color(0xFFCFE0FF)),
+                          backgroundColor: const Color(0xFFEEF5FF),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        child: const Text('Import IDX'),
+                      ),
+                    ],
                   ),
                 ),
                 Container(
