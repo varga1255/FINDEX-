@@ -681,11 +681,18 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
+        leadingWidth: 38,
         leading: IconButton(
-          icon: const Icon(Icons.info_outline),
+          icon: const Icon(Icons.info_outline, size: 22),
           onPressed: _openUserGuide,
           tooltip: 'Používateľská príručka',
+          padding: const EdgeInsets.only(left: 4, right: 2),
+          constraints: const BoxConstraints(
+            minWidth: 32,
+            minHeight: 32,
+          ),
         ),
+        titleSpacing: 4,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
