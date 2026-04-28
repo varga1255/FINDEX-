@@ -4,9 +4,6 @@ workflows:
     max_build_duration: 60
     environment:
       flutter: 3.41.5
-      vars:
-        APP_NAME: FIMCOS
-        APP_PACKAGE_NAME: com.fimcos.financneindexy
     scripts:
       - name: Najdi Flutter projekt
         script: |
@@ -35,28 +32,10 @@ workflows:
 
           rm -rf android ios linux macos web windows test .dart_tool
 
-          flutter create --platforms=android --org com.fimcos --project-name financne_indexy .
+          flutter create --platforms=android --project-name financne_indexy .
 
           cp /tmp/financne_indexy_backup/pubspec.yaml pubspec.yaml
           cp /tmp/financne_indexy_backup/main.dart lib/main.dart
-
-      - name: Nastav Android identitu
-        script: |
-          cd "$PROJECT_DIR"
-          if [ -f android/app/build.gradle.kts ]; then
-            perl -0pi -e 's|namespace = "[^"]*"|namespace = "'"$APP_PACKAGE_NAME"'"|' android/app/build.gradle.kts
-            perl -0pi -e 's|applicationId = "[^"]*"|applicationId = "'"$APP_PACKAGE_NAME"'"|' android/app/build.gradle.kts
-          elif [ -f android/app/build.gradle ]; then
-            perl -0pi -e "s|namespace ['\"][^'\"]*['\"]|namespace '$APP_PACKAGE_NAME'|" android/app/build.gradle
-            perl -0pi -e "s|applicationId ['\"][^'\"]*['\"]|applicationId '$APP_PACKAGE_NAME'|" android/app/build.gradle
-          else
-            echo "Android app Gradle subor sa nenasiel."
-            find android -maxdepth 3 -type f | sort
-            exit 1
-          fi
-
-          echo "===== Android package name ====="
-          echo "$APP_PACKAGE_NAME"
 
       - name: Nastav nazov aplikacie
         script: |
@@ -64,22 +43,22 @@ workflows:
           mkdir -p android/app/src/main/res/values
           if [ -f android/app/src/main/res/values/strings.xml ]; then
             if grep -q '<string name="app_name">' android/app/src/main/res/values/strings.xml; then
-              perl -0pi -e 's|<string name="app_name">.*?</string>|<string name="app_name">'"$APP_NAME"'</string>|' android/app/src/main/res/values/strings.xml
+              perl -0pi -e 's|<string name="app_name">.*?</string>|<string name="app_name">FIMCOS</string>|' android/app/src/main/res/values/strings.xml
             else
-              perl -0pi -e 's|</resources>|    <string name="app_name">'"$APP_NAME"'</string>\n</resources>|' android/app/src/main/res/values/strings.xml
+              perl -0pi -e 's|</resources>|    <string name="app_name">FIMCOS</string>\n</resources>|' android/app/src/main/res/values/strings.xml
             fi
           else
             printf '%s\n' \
               '<?xml version="1.0" encoding="utf-8"?>' \
               '<resources>' \
-              "    <string name=\"app_name\">$APP_NAME</string>" \
+              '    <string name="app_name">FIMCOS</string>' \
               '</resources>' > android/app/src/main/res/values/strings.xml
           fi
 
-          if grep -q 'android:label="@string/app_name"' android/app/src/main/AndroidManifest.xml; then
-            echo "Android label uz pouziva @string/app_name"
+          if grep -q 'android:label="FIMCOS"' android/app/src/main/AndroidManifest.xml; then
+            echo "Android label uz pouziva FIMCOS"
           else
-            perl -0pi -e 's|android:label="[^"]*"|android:label="@string/app_name"|' android/app/src/main/AndroidManifest.xml
+            perl -0pi -e 's|android:label="[^"]*"|android:label="FIMCOS"|' android/app/src/main/AndroidManifest.xml
           fi
 
           echo "===== android/app/src/main/res/values/strings.xml ====="
@@ -131,32 +110,6 @@ workflows:
             cat android/app/build.gradle.kts
           else
             cat android/app/build.gradle
-          fi
-
-      - name: Nastav release signing
-        script: |
-          cd "$PROJECT_DIR"
-          if [ -z "$CM_KEYSTORE_BASE64" ] || [ -z "$CM_KEYSTORE_PASSWORD" ] || [ -z "$CM_KEY_ALIAS" ] || [ -z "$CM_KEY_PASSWORD" ]; then
-            echo "Chybaju Codemagic secrety pre stabilny Android release signing."
-            echo "Pozadovane secrety: CM_KEYSTORE_BASE64, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD"
-            exit 1
-          fi
-
-          printf '%s' "$CM_KEYSTORE_BASE64" | base64 --decode > android/release-keystore.jks
-          echo "CM_RELEASE_KEYSTORE_PATH=$PROJECT_DIR/android/release-keystore.jks" >> $CM_ENV
-
-          if [ -f android/app/build.gradle.kts ]; then
-            if ! grep -q 'CM_RELEASE_KEYSTORE_PATH' android/app/build.gradle.kts; then
-              printf '\nval cmReleaseKeystorePath = System.getenv("CM_RELEASE_KEYSTORE_PATH")\nval cmReleaseStorePassword = System.getenv("CM_KEYSTORE_PASSWORD")\nval cmReleaseKeyAlias = System.getenv("CM_KEY_ALIAS")\nval cmReleaseKeyPassword = System.getenv("CM_KEY_PASSWORD")\n\nandroid {\n    signingConfigs {\n        create("release") {\n            storeFile = file(cmReleaseKeystorePath!!)\n            storePassword = cmReleaseStorePassword\n            keyAlias = cmReleaseKeyAlias\n            keyPassword = cmReleaseKeyPassword\n        }\n    }\n    buildTypes {\n        getByName("release") {\n            signingConfig = signingConfigs.getByName("release")\n        }\n    }\n}\n' >> android/app/build.gradle.kts
-            fi
-          elif [ -f android/app/build.gradle ]; then
-            if ! grep -q 'CM_RELEASE_KEYSTORE_PATH' android/app/build.gradle; then
-              printf "\ndef cmReleaseKeystorePath = System.getenv('CM_RELEASE_KEYSTORE_PATH')\ndef cmReleaseStorePassword = System.getenv('CM_KEYSTORE_PASSWORD')\ndef cmReleaseKeyAlias = System.getenv('CM_KEY_ALIAS')\ndef cmReleaseKeyPassword = System.getenv('CM_KEY_PASSWORD')\n\nandroid {\n    signingConfigs {\n        release {\n            storeFile file(cmReleaseKeystorePath)\n            storePassword cmReleaseStorePassword\n            keyAlias cmReleaseKeyAlias\n            keyPassword cmReleaseKeyPassword\n        }\n    }\n    buildTypes {\n        release {\n            signingConfig signingConfigs.release\n        }\n    }\n}\n" >> android/app/build.gradle
-            fi
-          else
-            echo "Android app Gradle subor sa nenasiel."
-            find android -maxdepth 3 -type f | sort
-            exit 1
           fi
 
       - name: Stiahni zavislosti
