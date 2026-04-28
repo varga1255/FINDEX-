@@ -117,6 +117,11 @@ workflows:
           cd "$PROJECT_DIR"
           flutter pub get
 
+      - name: Nastav launcher icon
+        script: |
+          cd "$PROJECT_DIR"
+          dart run flutter_launcher_icons
+
       - name: Zostav release APK
         script: |
           cd "$PROJECT_DIR"
