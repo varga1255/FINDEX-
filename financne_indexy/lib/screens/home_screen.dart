@@ -628,7 +628,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(Icons.show_chart, size: 72, color: Colors.grey[300]),
             const SizedBox(height: 20),
             const Text(
-              'Market Composite Signal',
+              'Financial Market Composite Signal',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -681,14 +681,19 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.info_outline),
+          onPressed: _openUserGuide,
+          tooltip: 'Používateľská príručka',
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               _appBarBuyPlus
-                  ? 'Market Composite Signal ++'
-                  : 'Market Composite Signal',
+                  ? 'Financial Market Composite Signal ++'
+                  : 'Financial Market Composite Signal',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
             ),
             if (_dataDate != null)
@@ -704,18 +709,6 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: _appBarColor,
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: _openUserGuide,
-            tooltip: 'Používateľská príručka',
-          ),
-          IconButton(
-            icon: const Icon(Icons.tune),
-            onPressed: _openSettings,
-            tooltip: 'Výber indexov',
-          ),
-        ],
       ),
       body: _allDataFuture == null
           ? _buildWelcome()
@@ -767,6 +760,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _useDrawdownAndStrictBreadthFilters,
                   disableTwoDayBuyConfirmation: _disableTwoDayBuyConfirmation,
                   onRetry: _load,
+                  onOpenSettings: _openSettings,
                 );
               },
             ),

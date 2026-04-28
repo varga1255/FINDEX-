@@ -83,7 +83,7 @@ class UserGuideScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'MACOSi',
+                  'FIMCOS',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
@@ -92,7 +92,7 @@ class UserGuideScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Market Composite Signal pre rýchly prehľad trhov a indexov.',
+                  'Financial Market Composite Signal pre rýchly prehľad trhov a indexov.',
                   style: TextStyle(
                     fontSize: 14,
                     color: mutedColor,
@@ -101,7 +101,7 @@ class UserGuideScreen extends StatelessWidget {
                 ),
                 sectionTitle('1. Na čo aplikácia slúži'),
                 paragraph(
-                  'Aplikácia MACOSi zobrazuje vývoj vybraných akciových indexov a ETF fondov a zároveň pre ne počíta trhový signál MCS.',
+                  'Aplikácia FIMCOS zobrazuje vývoj vybraných akciových indexov a ETF fondov a zároveň pre ne počíta trhový signál FMCS.',
                 ),
                 bullets([
                   'BUY = trh je podľa modelu v nákupnom pásme',
@@ -141,7 +141,7 @@ class UserGuideScreen extends StatelessWidget {
                   'tlačidlo obnovy dát',
                   'prepínače časového obdobia grafu',
                   'spoločný porovnávací graf vybraných indexov',
-                  'dlaždice jednotlivých indexov s percentuálnou zmenou a MCS signálom',
+                  'dlaždice jednotlivých indexov s percentuálnou zmenou a FMCS signálom',
                 ]),
                 paragraph(
                   'Farba horného pruhu sa riadi aktuálnym stavom pre S&P 500: zelená = BUY, tmavozelená = BUY++, oranžová = HOLD a červená = SELL.',
@@ -153,9 +153,9 @@ class UserGuideScreen extends StatelessWidget {
                   '1M = posledný mesiac',
                   '3M = posledné 3 mesiace',
                   '6M = posledných 6 mesiacov',
-                  '1Y = posledný rok',
-                  '2Y = posledné 2 roky',
-                  '5Y = posledných 5 rokov',
+                  '1R = posledný rok',
+                  '2R = posledné 2 roky',
+                  '5R = posledných 5 rokov',
                 ]),
                 paragraph(
                   'Graf zobrazuje percentuálnu zmenu oproti začiatku zvoleného obdobia, takže indexy sa dajú ľahšie porovnať medzi sebou.',
@@ -181,7 +181,7 @@ class UserGuideScreen extends StatelessWidget {
                 paragraph(
                   'Pri vytváraní vlastného indexu vyplníte názov, Yahoo ticker a krátky popis. Aplikácia ticker hneď overí cez Yahoo Finance.',
                 ),
-                sectionTitle('9. Nastavenia MCS filtra'),
+                sectionTitle('9. Nastavenia FMCS filtra'),
                 paragraph(
                   'Voľba Drawdown filter nepustí BUY po príliš malom poklese a pri silnom trhu použije prísnejší breadth filter.',
                 ),
@@ -235,7 +235,7 @@ class UserGuideScreen extends StatelessWidget {
                 ]),
                 sectionTitle('15. Zhrnutie'),
                 paragraph(
-                  'MACOSi je prehľadová aplikácia na sledovanie akciových indexov a ETF s doplneným MCS signálom. Najlepšie funguje ako rýchly denný panel: načítať dáta, skontrolovať graf, pozrieť signály a podľa potreby otvoriť detail vysvetlenia.',
+                  'FIMCOS je prehľadová aplikácia na sledovanie akciových indexov a ETF s doplneným FMCS signálom. Najlepšie funguje ako rýchly denný panel: načítať dáta, skontrolovať graf, pozrieť signály a podľa potreby otvoriť detail vysvetlenia.',
                 ),
               ],
             ),

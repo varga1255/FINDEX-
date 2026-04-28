@@ -71,7 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'PVA MCS trhový signál',
+            'Financial Market Composite Signal',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -80,7 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'MCS je kompozitný trhový signál, ktorý pre každý sledovaný index alebo ETF vyhodnocuje pravdepodobný stav trhu ako KÚP, PODRŽ alebo PREDAJ.',
+            'FMCS je kompozitný trhový signál, ktorý pre každý sledovaný index alebo ETF vyhodnocuje pravdepodobný stav trhu ako KÚP, PODRŽ alebo PREDAJ.',
             style: bodyStyle,
           ),
           const SizedBox(height: 14),
@@ -147,7 +147,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Zdrojom cien je Yahoo Finance. Ostatné vstupy sú v aplikácii odvodené z dostupných trhových dát alebo z interných feedov použitých pre výpočet MCS.',
+            'Zdrojom cien je Yahoo Finance. Ostatné vstupy sú v aplikácii odvodené z dostupných trhových dát alebo z interných feedov použitých pre výpočet FMCS.',
             style: bodyStyle,
           ),
           const SizedBox(height: 12),
@@ -162,7 +162,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: const [
                 TextSpan(
                   text:
-                      'Výsledky historických testov (2011–2018 a 2021–2026) ukazujú, že MCS aj MCS+ fungujú najstabilnejšie na indexoch ',
+                      'Výsledky historických testov (2011–2018 a 2021–2026) ukazujú, že FMCS aj FMCS+ fungujú najstabilnejšie na indexoch ',
                 ),
                 TextSpan(
                   text: 'S&P 500',
@@ -180,7 +180,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 TextSpan(
                   text:
-                      '. Dobré výsledky, najmä po sprísnení filtrov v MCS+, dosahuje aj ',
+                      '. Dobré výsledky, najmä po sprísnení filtrov v FMCS+, dosahuje aj ',
                 ),
                 TextSpan(
                   text: 'STOXX Europe 600',
