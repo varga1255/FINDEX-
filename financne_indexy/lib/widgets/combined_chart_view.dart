@@ -16,6 +16,7 @@ class CombinedChartView extends StatefulWidget {
   final bool useDrawdownAndStrictBreadthFilters;
   final bool disableTwoDayBuyConfirmation;
   final VoidCallback onRetry;
+  final VoidCallback onOpenSettings;
 
   const CombinedChartView({
     super.key,
@@ -25,6 +26,7 @@ class CombinedChartView extends StatefulWidget {
     required this.useDrawdownAndStrictBreadthFilters,
     required this.disableTwoDayBuyConfirmation,
     required this.onRetry,
+    required this.onOpenSettings,
   });
 
   @override
@@ -37,10 +39,20 @@ const _kPeriods = [
   (label: '1M', days: 21, desc: 'posledný mesiac', maxPoints: 15),
   (label: '3M', days: 63, desc: 'posledné 3 mesiace', maxPoints: 15),
   (label: '6M', days: 126, desc: 'posledných 6 mesiacov', maxPoints: 18),
-  (label: '1Y', days: 252, desc: 'posledný rok', maxPoints: 20),
-  (label: '2Y', days: 504, desc: 'posledné 2 roky', maxPoints: 22),
-  (label: '5Y', days: 1260, desc: 'posledných 5 rokov', maxPoints: 26),
+  (label: '1R', days: 252, desc: 'posledný rok', maxPoints: 20),
+  (label: '2R', days: 504, desc: 'posledné 2 roky', maxPoints: 22),
+  (label: '5R', days: 1260, desc: 'posledných 5 rokov', maxPoints: 26),
 ];
+
+enum _IndexDisplayMode {
+  all,
+  builtIn,
+  custom,
+}
+
+final Set<String> _kBuiltInTickers = {
+  for (final index in kAllIndices) index.ticker,
+};
 
 class _McsHistoryPoint {
   final DateTime date;
@@ -69,6 +81,7 @@ class _McsComputationResult {
 class _CombinedChartViewState extends State<CombinedChartView>
     with SingleTickerProviderStateMixin {
   int _periodIdx = 1;
+  _IndexDisplayMode _displayMode = _IndexDisplayMode.all;
   final Set<String> _hiddenTickers = {};
   late final AnimationController _buyPlusPulse;
 
@@ -89,7 +102,60 @@ class _CombinedChartViewState extends State<CombinedChartView>
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant CombinedChartView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final displayedTickers = _displayedIndices.map((idx) => idx.ticker).toSet();
+    _hiddenTickers.removeWhere((ticker) => !displayedTickers.contains(ticker));
+  }
+
   int get _days => _kPeriods[_periodIdx].days;
+
+  List<FinancialIndex> get _displayedIndices {
+    switch (_displayMode) {
+      case _IndexDisplayMode.builtIn:
+        return widget.activeIndices
+            .where((idx) => _kBuiltInTickers.contains(idx.ticker))
+            .toList(growable: false);
+      case _IndexDisplayMode.custom:
+        return widget.activeIndices
+            .where((idx) => !_kBuiltInTickers.contains(idx.ticker))
+            .toList(growable: false);
+      case _IndexDisplayMode.all:
+        return widget.activeIndices;
+    }
+  }
+
+  void _setDisplayMode(_IndexDisplayMode mode) {
+    setState(() {
+      _displayMode = mode;
+      final displayedTickers = _displayedIndices.map((idx) => idx.ticker).toSet();
+      _hiddenTickers.removeWhere((ticker) => !displayedTickers.contains(ticker));
+    });
+  }
+
+  Widget _buildDisplayModeButton(_IndexDisplayMode mode, String label) {
+    final selected = _displayMode == mode;
+    return GestureDetector(
+      onTap: () => _setDisplayMode(mode),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF1565C0) : Colors.transparent,
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: selected ? Colors.white : Colors.grey[600],
+          ),
+        ),
+      ),
+    );
+  }
 
   List<T> _downsample<T>(List<T> data, int maxN) {
     if (data.length <= maxN) return data;
@@ -584,11 +650,11 @@ class _CombinedChartViewState extends State<CombinedChartView>
   ) {
     final signal = snapshot.signal;
     if (signal == null || signal.mcs == null) {
-      return 'Pre ${index.name} zatiaľ chýba dostatočná história dát na plný výpočet MCS, preto signál ešte nie je spoľahlivo potvrdený.';
+      return 'Pre ${index.name} zatiaľ chýba dostatočná história dát na plný výpočet FMCS, preto signál ešte nie je spoľahlivo potvrdený.';
     }
 
     final parts = <String>[
-      'MCS ${_mcsSignalBubbleLabel(signal.finalSignal)} pre ${index.name}.',
+      'FMCS ${_mcsSignalBubbleLabel(signal.finalSignal)} pre ${index.name}.',
     ];
 
     final trendScore = signal.trendScore ?? 0.0;
@@ -630,7 +696,7 @@ class _CombinedChartViewState extends State<CombinedChartView>
     } else if (reasons.contains('waiting_second_kup_day')) {
       parts.add('BUY ešte čaká na druhý potvrdzujúci obchodný deň.');
     } else {
-      parts.add('Finálne MCS dosiahlo ${signal.mcs!.toStringAsFixed(1)} bodu.');
+      parts.add('Finálne FMCS dosiahlo ${signal.mcs!.toStringAsFixed(1)} bodu.');
     }
 
     return parts.join(' ');
@@ -706,7 +772,7 @@ class _CombinedChartViewState extends State<CombinedChartView>
                 ),
               ),
               TextSpan(
-                text: 'MCS zdôvodnenie',
+                text: 'FMCS zdôvodnenie',
                 style: TextStyle(
                   color: signalColor,
                   fontWeight: FontWeight.w700,
@@ -795,7 +861,7 @@ class _CombinedChartViewState extends State<CombinedChartView>
                     child: periodHistory.every((point) => point.mcs == null)
                         ? const Center(
                             child: Text(
-                              'Pre toto obdobie ešte nie sú dostupné denné hodnoty MCS.',
+                              'Pre toto obdobie ešte nie sú dostupné denné hodnoty FMCS.',
                               textAlign: TextAlign.center,
                               style: TextStyle(fontSize: 12, color: Colors.grey),
                             ),
@@ -1020,7 +1086,7 @@ class _CombinedChartViewState extends State<CombinedChartView>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSplitDetailLine(
-            leftLabel: 'MCS',
+            leftLabel: 'FMCS',
             leftValue: signal?.mcs?.toStringAsFixed(1) ?? 'N/A',
             rightLabel: 'Cena',
             rightValue: latest != null ? _fmtVal(latest.close) : '—',
@@ -1129,8 +1195,9 @@ class _CombinedChartViewState extends State<CombinedChartView>
     final isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
     final mcsResults = _buildMcsResults();
+    final displayedIndices = _displayedIndices;
 
-    final visibleSeries = widget.activeIndices
+    final visibleSeries = displayedIndices
         .where((idx) => !_hiddenTickers.contains(idx.ticker))
         .map((idx) {
           final data = _slice(idx.ticker);
@@ -1204,7 +1271,7 @@ class _CombinedChartViewState extends State<CombinedChartView>
                         children: [
                           const Expanded(
                             child: Text(
-                              'Obdobie',
+                              'Sledované obdobie',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
@@ -1215,7 +1282,7 @@ class _CombinedChartViewState extends State<CombinedChartView>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Obnov dáta',
+                                'Načítať dáta',
                                 textAlign: TextAlign.right,
                                 style: TextStyle(
                                   fontSize: 12,
@@ -1285,12 +1352,57 @@ class _CombinedChartViewState extends State<CombinedChartView>
                           ),
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _buildDisplayModeButton(
+                                      _IndexDisplayMode.all,
+                                      'Všetky',
+                                    ),
+                                    _buildDisplayModeButton(
+                                      _IndexDisplayMode.builtIn,
+                                      'Aplikačné IDX',
+                                    ),
+                                    _buildDisplayModeButton(
+                                      _IndexDisplayMode.custom,
+                                      'Vlastné IDX',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: widget.onOpenSettings,
+                            icon: const Icon(
+                              Icons.tune,
+                              color: Color(0xFF1565C0),
+                            ),
+                            tooltip: 'Výber indexov',
+                            visualDensity: VisualDensity.compact,
+                            splashRadius: 20,
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Builder(
                     builder: (context) {
-                      final pcts = widget.activeIndices
+                      final pcts = displayedIndices
                           .where((idx) => !_hiddenTickers.contains(idx.ticker))
                           .map((idx) {
                             final d = _slice(idx.ticker);
@@ -1348,7 +1460,15 @@ class _CombinedChartViewState extends State<CombinedChartView>
               padding: const EdgeInsets.fromLTRB(6, 16, 14, 10),
               child: SizedBox(
                 height: 300,
-                child: lineBars.isEmpty
+                child: displayedIndices.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Pre zvolený filter nie sú dostupné žiadne indexy.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    : lineBars.isEmpty
                     ? Center(
                         child: Text(
                           'Vybrané indexy nemajú dostupné dáta pre zvolené obdobie.',
@@ -1515,9 +1635,9 @@ class _CombinedChartViewState extends State<CombinedChartView>
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
             ),
-            itemCount: widget.activeIndices.length,
+            itemCount: displayedIndices.length,
             itemBuilder: (context, i) {
-              final idx = widget.activeIndices[i];
+              final idx = displayedIndices[i];
               final data = _slice(idx.ticker);
               final result = mcsResults[idx.ticker] ??
                   const _McsComputationResult(
@@ -1690,7 +1810,7 @@ class _CombinedChartViewState extends State<CombinedChartView>
             child: Column(
               children: [
                 Text(
-                  'Created by Peter Varga',
+                  'Developed by Peter Varga',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                 ),
