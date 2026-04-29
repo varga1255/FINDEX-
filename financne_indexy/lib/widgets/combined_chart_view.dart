@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../mcs_bf.dart';
 import '../mcs_bf_feeds.dart';
@@ -202,6 +203,27 @@ class _CombinedChartViewState extends State<CombinedChartView>
     if (v >= 10000) return v.toStringAsFixed(0);
     if (v >= 1000) return v.toStringAsFixed(1);
     return v.toStringAsFixed(2);
+  }
+
+  Uri _yahooQuoteUri(String ticker) {
+    return Uri.parse(
+      'https://finance.yahoo.com/quote/${Uri.encodeComponent(ticker)}',
+    );
+  }
+
+  Future<void> _openYahooQuote(BuildContext context, FinancialIndex idx) async {
+    final uri = _yahooQuoteUri(idx.ticker);
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Nepodarilo sa otvoriť Yahoo stránku pre ${idx.name}.'),
+        ),
+      );
+    }
   }
 
   List<FinancialIndex> get _signalIndices =>
@@ -1686,6 +1708,7 @@ class _CombinedChartViewState extends State<CombinedChartView>
                                 _hiddenTickers.add(idx.ticker);
                               }
                             }),
+                            onLongPress: () => _openYahooQuote(context, idx),
                             child: Padding(
                               padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
                               child: Row(
