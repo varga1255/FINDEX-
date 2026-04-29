@@ -168,7 +168,7 @@ class UserGuideScreen extends StatelessWidget {
                   'signalizačnú bublinu BUY, HOLD, SELL alebo BUY++',
                 ]),
                 paragraph(
-                  'Ťuknutím na ľavú časť dlaždice môžete index dočasne skryť alebo znovu zobraziť v grafe. Ťuknutím na pravú časť so signálom otvoríte vysvetlenie, z čoho bol signál vypočítaný.',
+                  'Ťuknutím na ľavú časť dlaždice môžete index dočasne skryť alebo znovu zobraziť v grafe. Dlhým podržaním ľavej časti dlaždice otvoríte Yahoo Finance stránku daného indexu v externom prehliadači. Ťuknutím na pravú časť so signálom otvoríte vysvetlenie, z čoho bol signál vypočítaný.',
                 ),
                 sectionTitle('8. Nastavenia a výber indexov'),
                 bullets([
