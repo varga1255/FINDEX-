@@ -23,7 +23,7 @@ class LocalNotificationService {
         : lines.join('\n');
     final androidDetails = AndroidNotificationDetails(
       'mcs_buy_signals',
-      'MCS BUY signály',
+      'FMCS BUY signály',
       channelDescription:
           'Lokálne upozornenia na indexy v stave BUY alebo BUY++',
       importance: Importance.max,
@@ -33,7 +33,7 @@ class LocalNotificationService {
     final details = NotificationDetails(android: androidDetails);
     await _plugin.show(
       1001,
-      'PVA MCS BUY signály',
+      'PVA FMCS BUY signály',
       body,
       details,
     );
